@@ -91,6 +91,7 @@ int server(char *server_port)
     if (bind(server_socket_fd, server_addr->ai_addr, server_addr->ai_addrlen) == -1)
     {
       close(server_socket_fd);
+      server_socket_fd = -1;
       perror("server: bind");
       continue;
     }
@@ -134,6 +135,7 @@ int server(char *server_port)
 
     // Close client socket.
     close(client_socket_fd);
+    client_socket_fd = -1;
 
     // Check for read errors.
     if (read == -1)
