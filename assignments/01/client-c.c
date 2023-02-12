@@ -34,6 +34,7 @@
 #include <unistd.h>
 
 #define SEND_BUFFER_SIZE 2048
+#define READ_FORMAT "%" STR(SEND_BUFFER_SIZE) "s"
 
 /* TODO: client()
  *
@@ -58,7 +59,7 @@ int client(char *server_ip, char *server_port)
   }
 
   // Loop through results and accept the first valid one.
-  struct addr_info *server_addr;
+  struct addrinfo *server_addr;
   int server_socket_fd;
   for (server_addr = server_info; server_addr != NULL; server_addr = server_addr->ai_next)
   {
@@ -74,6 +75,7 @@ int client(char *server_ip, char *server_port)
     if (connect(server_socket_fd, server_addr->ai_addr, server_addr->ai_addrlen) == -1)
     {
       close(server_socket_fd);
+      server_socket_fd = -1;
       perror("client: connect");
       continue;
     }
@@ -88,6 +90,24 @@ int client(char *server_ip, char *server_port)
   // Check for valid address.
   if (server_addr == NULL)
   {
+    return 1;
+  }
+
+  // Read from stdin.
+  char buffer[SEND_BUFFER_SIZE], *read;
+  while ((read = fgets(buffer, sizeof(buffer), stdin)) != NULL)
+  {
+    send(server_socket_fd, buffer, strlen(buffer), 0);
+  }
+
+  // Close connection.
+  close(server_socket_fd);
+  server_socket_fd = -1;
+
+  // Check for stdin error.
+  if (ferror(stdin))
+  {
+    perror("client: fgets");
     return 1;
   }
 
