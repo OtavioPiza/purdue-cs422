@@ -35,9 +35,7 @@
 
 #define SEND_BUFFER_SIZE 2048
 
-/* TODO: client()
- *
- * THIS CODE IS HEAVILY INSPIRED BY THAT PROVIDED IN THE RECOMMENDED GUIDE
+/* THIS CODE IS HEAVILY INSPIRED BY THAT PROVIDED IN THE RECOMMENDED GUIDE
  *
  * Open socket and send message from stdin.
  * Return 0 on success, non-zero on failure

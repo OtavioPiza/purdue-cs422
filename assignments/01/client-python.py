@@ -18,8 +18,8 @@
 #############################################################################
 
 # client-python.py
-# Name:
-# PUID:
+# Name: Otavio Sartorelli de Toledo Piza
+# PUID: 0032690213
 
 import sys
 import socket
@@ -27,8 +27,52 @@ import socket
 SEND_BUFFER_SIZE = 2048
 
 def client(server_ip, server_port):
-    """TODO: Open socket and send message from sys.stdin"""
-    pass
+    """Open socket and send message from sys.stdin"""
+    
+    # Allocate data structures for socket.
+    hints = socket.getaddrinfo(server_ip, server_port, socket.AF_INET, socket.SOCK_STREAM)
+
+    # Loop through results and accept the first valid one.
+    server_socket = None
+    for res in hints:
+        af, socktype, proto, canonname, sa = res
+        try:
+            # Try to open the socket.
+            server_socket = socket.socket(af, socktype, proto)
+        except socket.error as msg:
+            server_socket = None
+            continue
+
+        # Set connect to socket.
+        try:
+            server_socket.connect(sa)
+        except socket.error as msg:
+            server_socket.close()
+            server_socket = None
+            continue
+
+        # If everything above worked break;
+        break
+
+    # Check for valid address.
+    if server_socket is None:
+        print "Could not connect to the server."
+        return 1;
+
+    # Read from stdin and send to server.
+    while True:
+        buffer = sys.stdin.read(SEND_BUFFER_SIZE)
+        
+        if not buffer:
+            break
+        
+        server_socket.sendall(buffer)
+
+    # Close connection.
+    server_socket.close()
+
+    # Return 0.
+    return 0
 
 
 def main():
@@ -38,6 +82,7 @@ def main():
     server_ip = sys.argv[1]
     server_port = int(sys.argv[2])
     client(server_ip, server_port)
+
 
 if __name__ == "__main__":
     main()

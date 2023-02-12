@@ -18,8 +18,8 @@
 #############################################################################
 
 # server-python.py
-# Name:
-# PUID:
+# Name: Otavio Sartorelli de Toledo Piza
+# PUID: 0032690213
 
 import sys
 import socket
@@ -27,9 +27,82 @@ import socket
 RECV_BUFFER_SIZE = 2048
 QUEUE_LENGTH = 10
 
+
 def server(server_port):
-    """TODO: Listen on socket and print received message to sys.stdout"""
-    pass
+    """Listen on socket and print received message to sys.stdout"""
+    
+    # Allocate data structures for server socket.
+    hints = socket.getaddrinfo(None, server_port, socket.AF_INET, socket.SOCK_STREAM)
+
+    # Try to get the server address info.
+    server_info = hints[0]
+    if not server_info:
+        sys.stderr.write("server: getaddrinfo")
+        return 1
+
+    # Bind to first valid result on server_info.
+    server_socket_fd = None
+    for server_addr in hints:
+        yes = 1
+
+        # Try to open a socket.
+        try:
+            server_socket_fd = socket.socket(server_addr[0], server_addr[1], server_addr[2])
+        except socket.error as error:
+            sys.stderr.write("server: socket")
+            continue
+
+        # Set socket options.
+        try:
+            server_socket_fd.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, yes)
+        except socket.error as error:
+            sys.stderr.write("server: setsockopt")
+            return 1
+
+        # Try to bind the socket.
+        try:
+            server_socket_fd.bind(server_addr[4])
+        except socket.error as error:
+            server_socket_fd.close()
+            server_socket_fd = None
+            sys.stderr.write("server: bind")
+            continue
+
+        # Break if everything worked.
+        break
+
+    # Check for valid server address.
+    if not server_socket_fd:
+        return 1
+
+    # Try to listen.
+    try:
+        server_socket_fd.listen(QUEUE_LENGTH)
+    except socket.error as error:
+        return 1
+
+    # Infinitely accept connections.
+    while True:
+        # Accept connection.
+        client_socket_fd, client_addr = server_socket_fd.accept()
+
+        # Listen for message.
+        buffer = []
+        while True:
+            read = client_socket_fd.recv(RECV_BUFFER_SIZE)
+            if not read:
+                break
+            buffer.append(read)
+
+        # Print message.
+        sys.stdout.write(''.join(buffer))
+        sys.stdout.flush()
+
+        # Close client socket.
+        client_socket_fd.close()
+
+    # Return 0.
+    return 0
 
 
 def main():
@@ -38,6 +111,7 @@ def main():
         sys.exit("Usage: python server-python.py (Server Port)")
     server_port = int(sys.argv[1])
     server(server_port)
+
 
 if __name__ == "__main__":
     main()
