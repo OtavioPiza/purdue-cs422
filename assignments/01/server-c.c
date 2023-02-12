@@ -133,7 +133,7 @@ int server(char *server_port)
     // Print message.
     fprintf(stdout, "%s", buffer);
 
-    // Close connection.
+    // Close connection to client.
     close(client_socket_fd);
   }
 
