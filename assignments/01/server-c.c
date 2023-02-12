@@ -129,7 +129,6 @@ int server(char *server_port)
     while ((read = recv(client_socket_fd, buffer, sizeof(buffer), 0)) > 0)
     {
       // Print message.
-      buffer[read] = '\0';
       fwrite(buffer, sizeof(char), read, stdout);
       fflush(stdout);
     }
