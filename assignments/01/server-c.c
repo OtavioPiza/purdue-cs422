@@ -39,6 +39,9 @@
 #define RECV_BUFFER_SIZE 2048
 
 /* Open socket and wait for client to connect
+ *
+ * THIS CODE IS HEAVILY INSPIRED BY THAT PROVIDED IN THE RECOMMENDED GUIDE
+ * 
  * Print received message to stdout
  * Return 0 on success, non-zero on failure
  */
