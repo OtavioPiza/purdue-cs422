@@ -38,8 +38,7 @@
 #define QUEUE_LENGTH 10
 #define RECV_BUFFER_SIZE 2048
 
-/* TODO: server()
- * Open socket and wait for client to connect
+/* Open socket and wait for client to connect
  * Print received message to stdout
  * Return 0 on success, non-zero on failure
  */
