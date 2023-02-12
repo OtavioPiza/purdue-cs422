@@ -33,7 +33,7 @@
 #include <sys/types.h>
 #include <unistd.h>
 
-#define SEND_BUFFER_SIZE 10
+#define SEND_BUFFER_SIZE 2048
 
 /* TODO: client()
  *
@@ -46,7 +46,7 @@ int client(char *server_ip, char *server_port)
 {
   // Allocate data structures for socket.
   struct addrinfo *server_info, *hints = calloc(1, sizeof(struct addrinfo));
-  hints->ai_family = AF_UNSPEC;
+  hints->ai_family = AF_INET;
   hints->ai_socktype = SOCK_STREAM;
 
   // Try to connect.
@@ -94,9 +94,11 @@ int client(char *server_ip, char *server_port)
 
   // Read from stdin.
   char buffer[SEND_BUFFER_SIZE], *read;
-  while ((read = fgets(buffer, sizeof(buffer), stdin)) != NULL)
+  while ((read = fgets(buffer, SEND_BUFFER_SIZE, stdin)) != NULL)
   {
-    send(server_socket_fd, buffer, strlen(buffer), 0);
+    fprintf(stdout, "%s", read);
+    fflush(stdout);
+    send(server_socket_fd, read, strlen(read), 0);
   }
 
   // Close connection.

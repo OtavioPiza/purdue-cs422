@@ -36,7 +36,7 @@
 #include <unistd.h>
 
 #define QUEUE_LENGTH 10
-#define RECV_BUFFER_SIZE 5
+#define RECV_BUFFER_SIZE 2048
 
 /* Open socket and wait for client to connect
  *
@@ -49,7 +49,7 @@ int server(char *server_port)
 {
   // Allocate data structures for server socket.
   struct addrinfo *server_info, *hints = calloc(1, sizeof(struct addrinfo));
-  hints->ai_family = AF_UNSPEC;
+  hints->ai_family = AF_INET;
   hints->ai_socktype = SOCK_STREAM;
   hints->ai_flags = AI_PASSIVE;
 
@@ -131,6 +131,7 @@ int server(char *server_port)
       // Print message.
       buffer[read] = '\0';
       fprintf(stdout, "%s", buffer);
+      fflush(stdout);
     }
 
     // Close client socket.
