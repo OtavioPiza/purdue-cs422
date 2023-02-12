@@ -36,7 +36,7 @@
 #include <unistd.h>
 
 #define QUEUE_LENGTH 10
-#define RECV_BUFFER_SIZE 2048
+#define RECV_BUFFER_SIZE 5
 
 /* Open socket and wait for client to connect
  *

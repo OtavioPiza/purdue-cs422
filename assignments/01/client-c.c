@@ -33,8 +33,7 @@
 #include <sys/types.h>
 #include <unistd.h>
 
-#define SEND_BUFFER_SIZE 2048
-#define READ_FORMAT "%" STR(SEND_BUFFER_SIZE) "s"
+#define SEND_BUFFER_SIZE 10
 
 /* TODO: client()
  *
