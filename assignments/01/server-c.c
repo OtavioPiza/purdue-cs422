@@ -22,15 +22,17 @@
  * Name:  Otavio Sartorelli de Toledo Piza
  * PUID:  0032690213
  */
-#include <errno.h>
+#include <arpa/inet.h>
 #include <errno.h>
 #include <netdb.h>
 #include <netinet/in.h>
+#include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <sys/socket.h>
 #include <sys/types.h>
+#include <sys/wait.h>
 #include <unistd.h>
 
 #define QUEUE_LENGTH 10
@@ -53,7 +55,7 @@ int server(char *server_port)
   if (getaddrinfo(NULL, server_port, hints, &server_info) != 0)
   {
     free(hints);
-    perror();
+    perror("server: getaddrinfo");
     return 1;
   }
 
@@ -72,14 +74,14 @@ int server(char *server_port)
     if ((server_socket_fd = socket(
              server_addr->ai_family, server_addr->ai_socktype, server_addr->ai_protocol)) == -1)
     {
-      perror();
+      perror("server: socket");
       continue;
     }
 
     // Set socket options.
     if (setsockopt(server_socket_fd, SOL_SOCKET, SO_REUSEADDR, &yes, sizeof(int)) == -1)
     {
-      perror();
+      perror("server: setsockopt");
       return 1;
     }
 
@@ -87,7 +89,7 @@ int server(char *server_port)
     if (bind(server_socket_fd, server_addr->ai_addr, server_addr->ai_addrlen) == -1)
     {
       close(server_socket_fd);
-      perror();
+      perror("server: bind");
       continue;
     }
 
@@ -105,11 +107,35 @@ int server(char *server_port)
   }
 
   // Try to listen.
-  if (listen(server_socket_fd, BACKLOG) == -1)
+  if (listen(server_socket_fd, QUEUE_LENGTH) == -1)
   {
     return 1;
   }
 
+  // Infinitely accept connections.
+  while (1)
+  {
+    // Accept connection.
+    struct sockaddr_storage client_addr;
+    socklen_t sin_size = sizeof(client_addr);
+    int client_socket_fd = accept(server_socket_fd, (struct sockaddr *)&client_addr, &sin_size);
+
+    // Listen for message.
+    char buffer[RECV_BUFFER_SIZE];
+    int read;
+    if ((read = recv(client_socket_fd, buffer, sizeof(buffer), 0)) == -1)
+    {
+      perror("server: recv");
+      close(client_socket_fd);
+      continue;
+    }
+
+    // Print message.
+    fprintf(stdout, "%s", buffer);
+
+    // Close connection.
+    close(client_socket_fd);
+  }
 
   // Return 0.
   return 0;
