@@ -41,7 +41,7 @@
 /* Open socket and wait for client to connect
  *
  * THIS CODE IS HEAVILY INSPIRED BY THAT PROVIDED IN THE RECOMMENDED GUIDE
- * 
+ *
  * Print received message to stdout
  * Return 0 on success, non-zero on failure
  */
@@ -99,7 +99,7 @@ int server(char *server_port)
     break;
   }
 
-  // Free server_info;
+  // Free server_info.
   freeaddrinfo(server_info);
 
   // Check for valid server address.
@@ -125,18 +125,22 @@ int server(char *server_port)
     // Listen for message.
     char buffer[RECV_BUFFER_SIZE];
     int read;
-    if ((read = recv(client_socket_fd, buffer, sizeof(buffer), 0)) == -1)
+    while ((read = recv(client_socket_fd, buffer, sizeof(buffer), 0)) > 0)
     {
-      perror("server: recv");
-      close(client_socket_fd);
-      continue;
+      // Print message.
+      buffer[read] = '\0';
+      fprintf(stdout, "%s", buffer);
     }
 
-    // Print message.
-    fprintf(stdout, "%s", buffer);
-
-    // Close connection to client.
+    // Close client socket.
     close(client_socket_fd);
+
+    // Check for read errors.
+    if (read == -1)
+    {
+      perror("server: recv");
+      continue;
+    }
   }
 
   // Return 0.

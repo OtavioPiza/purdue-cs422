@@ -44,6 +44,53 @@
  */
 int client(char *server_ip, char *server_port)
 {
+  // Allocate data structures for socket.
+  struct addrinfo *server_info, *hints = calloc(1, sizeof(struct addrinfo));
+  hints->ai_family = AF_UNSPEC;
+  hints->ai_socktype = SOCK_STREAM;
+
+  // Try to connect.
+  if (getaddrinfo(server_ip, server_port, hints, &server_info) != 0)
+  {
+    free(hints);
+    perror("client: getaddrinfo");
+    return 1;
+  }
+
+  // Loop through results and accept the first valid one.
+  struct addr_info *server_addr;
+  int server_socket_fd;
+  for (server_addr = server_info; server_addr != NULL; server_addr = server_addr->ai_next)
+  {
+    // Try to open the socket.
+    if ((server_socket_fd = socket(
+             server_addr->ai_family, server_addr->ai_socktype, server_addr->ai_protocol)) == -1)
+    {
+      perror("client: socket");
+      continue;
+    }
+
+    // Set connect to socket.
+    if (connect(server_socket_fd, server_addr->ai_addr, server_addr->ai_addrlen) == -1)
+    {
+      close(server_socket_fd);
+      perror("client: connect");
+      continue;
+    }
+
+    // If everything above worked break;
+    break;
+  }
+
+  // Free server_info.
+  freeaddrinfo(server_info);
+
+  // Check for valid address.
+  if (server_addr == NULL)
+  {
+    return 1;
+  }
+
   // Return 0.
   return 0;
 }
