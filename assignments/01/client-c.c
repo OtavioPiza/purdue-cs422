@@ -93,23 +93,21 @@ int client(char *server_ip, char *server_port)
   }
 
   // Read from stdin.
-  char buffer[SEND_BUFFER_SIZE], *read;
-  while ((read = fgets(buffer, SEND_BUFFER_SIZE, stdin)) != NULL)
+  char buffer[SEND_BUFFER_SIZE];
+  size_t read;
+  while ((read = fread(buffer, sizeof(char), SEND_BUFFER_SIZE, stdin)) > 0)
   {
-    fprintf(stdout, "%s", read);
-    fflush(stdout);
-    send(server_socket_fd, read, strlen(read), 0);
+    send(server_socket_fd, buffer, read, 0);
   }
 
   // Close connection.
   close(server_socket_fd);
   server_socket_fd = -1;
 
-  // Check for stdin error.
-  if (ferror(stdin))
+  // Check for io error.
+  if (ferror(stdin) || ferror(stdout))
   {
-    perror("client: fgets");
-    return 1;
+    perror("client-io:");
   }
 
   // Return 0.

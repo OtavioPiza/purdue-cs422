@@ -130,7 +130,7 @@ int server(char *server_port)
     {
       // Print message.
       buffer[read] = '\0';
-      fprintf(stdout, "%s", buffer);
+      fwrite(buffer, sizeof(char), read, stdout);
       fflush(stdout);
     }
 
