@@ -1,0 +1,249 @@
+\documentclass[12pt]{article}
+\usepackage{graphicx}
+\usepackage{fancyvrb}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{tikz}
+\usepackage[margin=0in]{geometry}
+\newtheorem{definition}{Definition}
+
+\title{CS 422 - Quiz 2}
+\author{Otavio Sartorelli de Toledo Piza}
+\date{Spring 2023}
+
+\begin{document}
+
+\maketitle
+
+\pagebreak
+
+\paragraph*{Quiz Instructions}
+I have read the instructions. PUID: 0032690213.
+
+\pagebreak
+Blank
+
+\pagebreak
+Blank
+
+\pagebreak
+Blank
+\pagebreak
+
+\begin{verbatim}
+    
+
+
+
+
+
+
+
+
+
+
+
+\end{verbatim}
+
+% What's the difference between bandwidth and throughput? To fetch a data of 200
+% megabytes over a 10 Gbps link with a round-trip-time (RTT) of 200ms, what'd be the bandwidth
+% and throughput of such communication?
+\paragraph*{Question 1}
+Bandwidth is the maximum number of bits a network can transfer for a unit of time; for example,
+each second a given network might be theoretically able to transfer 1 Mb. On the other hand, 
+throughput is a measure of how the network performs when transferring data in a given time 
+interval. For example, if it takes 2 seconds to transfer a 1 Mb file using the network previously
+mentioned from host A to host B, its throughput is 0.5 Mbps. With that in mind,
+the bandwidth of the network represents the maximum data that can be transmitted while the throughput
+represents actual performance and can be much lower due to factors such as congestions and other
+external factors.
+
+\subparagraph*{}
+In that sense, the bandwidth of the network mentioned in the question is 10 Gbps since it is
+the theoretical maximum performance of that network link. On the other hand, to calculate
+its throughput we need to consider the round-trip-time $RTT$ like the following:
+\begin{equation*}
+    \text{throughput } = \frac{\text{size of the data}}{RTT} = \frac{200 \text{ MB}}{200 \text{ ms}}
+                       = 1 \text{ MB/ms} = 1000 \text{ MBps} = 8000 \text{ Mbps}
+\end{equation*}
+Assuming, Gpbs means gigabits per second, where:
+\begin{itemize}
+    \item[] MBps = megabytes per second.
+    \item[] Mbps = megabits per second.
+\end{itemize}
+
+% What’s the difference between latency and jitter? Will jitter have any effect on the
+% bandwidth or average throughout (or both) of a communication link or message transfer?
+\paragraph*{Question 2}
+Latency is a measure of the time it takes to travel from one end of the network to the other for
+example a packet sent from host A might take 1 second to reach host B. On the other hand, jitter is
+a measure of how consistent, or rather inconsistent, the times of arrival of packages are. For
+example, on average packets from A to B might take 1 second but if, for example, a bunch of packets
+take 5 seconds and then another bunch arrives in a very short burst we say that there is jitter
+in the communication between A and B.
+
+\paragraph*{Question 12}*{}
+That said, bandwidth is a theoretical maximum transfer capacity of a network so jitter does not
+affect it (it might be a symptom of a congested network). Moreover, jitter just represents the
+inconsistentness of packet arrival delay and, thus, on a large  enough average does not affect
+throughout (latency does) since there are packets that arrive earlier and packet that arrive later
+the the average.
+
+\pagebreak
+
+\begin{verbatim}
+    
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+\end{verbatim}
+
+% What’s an Ethernet LAN segment, and what role do learning bridges play in
+% connecting a network of such segments
+\paragraph*{Question 3}
+A LAN segment is a physical cable that connects hosts on the same cable with the Ethernet layer
+using CSMA/CD. A learning bridge also operates on the ethernet layer and can connect different
+LAN segments which eliminates the length restriction associated with having multiple hosts talking
+over the same physical wire. Moreover, a learning bridge automatically learns which LAN segment a
+host is on. Then if A and B are on the same segment and A sends a packet to B the learning bridge
+will not broadcast the packet A sent. However, if A sends a packet to C and they are not in the
+same segment, the bridge will broadcast the packet to everyone except to the ingress port.
+
+% Synchronizing clocks between nodes is one of the main challenges that any
+% encoding scheme must handle carefully. List three such schemes and argue why one is better
+% than the other.
+\paragraph*{Question 4}
+Three such schemes are Non-return to Zero (NRZ), Manchester encoding (Manchester), and Non-return
+to Zero inverted (NRZI). One advantage of Non-return to Zero inverted is that different than the Manchester
+it does not required the network signal rate to be twice of the bit rate; this alone means that for
+the same hardware, NRZI already has twice the bandwidth of Manchester. Moreover, NRZI problem of
+having long sequences of 0s and 1s can be improved by using extra bits during encoding that allow it
+to be more compact than NRZ. Therefore, I argue that NRZI is the best option among the three provided.
+
+\pagebreak
+
+% Highlight the differences between connectionless datagram, connection-oriented
+% switching, and source routing? When is one better than the other? Also, which of these switching
+% schemes does the Internet (with the big I) implements?
+\paragraph*{Question 5}
+Connectionless datagram is sued in packet-switched network such as the Internet: each packet is
+an independent unit and is directed based on its destination address without establishing a connection
+beforehand (meaning delivery is not guaranteed). This switching approach is efficient for sending
+relatively small amounts of data where having packets on the first try is not required. Next,
+connection oriented switching a connection is established beforehand which ensures reliability
+since that connection is maintained throughout the transmission. In that sense, this type of
+switching is ideal for applications such as telephones since there is a smaller chance of jitter,
+given the connection route wont change, or packet drops since the connection is already established.
+Finally, source routing requires the sender to specify a list of intermediaries that the packet
+will pass through to reach its host. While this requires the sender to process a valid path, it also
+allows it to choose the route which might allow it to avoid congested nodes or go through insecure
+paths: e.g. a classified packet from a Government agency might not want to go through enemy nations.
+
+\subparagraph*{}
+The Internet uses connectionless datagram since it is best suited for a huge network that is
+constantly changing and where having to establish connections before transmitting, most of the time,
+small amounts of data such as a landing page would lead to congestions or having sender compute valid
+paths would be computationally expensive. On the other hand, connection-oriented switching is ideal
+for applications such as telephones since it grants users with a more reliable and less jittery
+connection which connectionless datagram is not able to afford since packets might take different routes
+and more likely be lost. Finally source routing is best suited for specialty applications where having
+control over how packets are transmitted is paramount, for example a country's government might not
+want to have its classified packets go through unfriendly nations who might try to spy on them. In that
+sense, source control provides them with that kind of control.
+
+% What’s the difference between (learning) switches, and routers? Which one of these
+% requires offline (out of band) support to maintain its forwarding tables?
+\paragraph*{Question 6}
+Learning switches operate on the ethernet layer (layer 2) while routers operate on the IP layer
+(layer 3). In that sense, switches typically use algorithms to populate their tables and do not
+require offline support (just plug and play). On the other hand, routers are subject to the topology
+of the network and therefore might need offline algorithms to maintain their tables.
+
+\pagebreak
+
+% What’s a spanning tree protocol? What purpose does it serve in a network?
+\paragraph*{Question 7}
+The spanning tree is a loop free view of the network of a network. Its purpose it to provide a loop
+free path for packets to go from any host to any other host since, if a packet entered an infinite
+or very long loop, the network could become easily congested. In that sense, the tree structured
+computed on top of the real network guarantees the a path between A and B not only exists but also
+has not loops which makes sending the packet much simpler.
+
+% What’s the relationship between ARP and broadcast? Moreover, fragmentation
+% causes packets to split into smaller packets as they traverse the network; do ARP packets ever
+% get fragmented, if not, why?
+\paragraph*{Question 8}
+ARP packets are themselves broadcasts: since the sender does not know who the receiver is, it has
+to broadcast a message to everyone on a network segment requesting the MAC address of a specified
+device.
+
+\subparagraph*{}
+Fragmentation occurs only when packets are too large to be transmitted over the network. In that
+sense, because ARP packets are very small they will not be split into multiple ones.
+
+\pagebreak
+
+% What do we desire from a network addressing scheme? Why is Ethernet so poor at
+% meeting this desire; give 2 examples where Ethernet fails?
+\paragraph*{Question 9}
+The main characteristics of a network addressing schemes is that is has to be globally unique,
+scalable, simple to manage, and efficient. While MAC addresses are unique and easy to manage
+with each network device manufacturer being provided with a MAC range, they are not scalable
+nor efficient. Regarding efficiency, MAC addresses have no structure so even if two devices
+only have the LSB different they might be in totally different networks. Therefore, routers would
+have to keeps a table of every ethernet address which requires untractable amounts of memory. In
+terms of scalability, using MAC addresses could lead to huge broadcast waves from ARP requests
+going through the entire Internet trying to find one device which would lead to congestions
+rendering the network more unusable as devices are added.
+
+% What’s the difference between classful and classless addressing? How is subnetting
+% related to these addressing schemes?
+\paragraph*{Question 10}
+They are each a different approach of assigning ips. While classful addressing is based on pre-established
+templates where a known amount of bits are associated with a network, subnetwork, or hosts, classless
+has to store that information somewhere else since the format can vary from packet to packet which means
+that information has to be stored in the packet itself. Subnetting is used in both of these schemes to
+divide a network into a smaller subnetworking the main difference is that for classful addressing
+the number and which bytes are associated with the network, subnetwork, and host are know in advance
+just by looking at the first bits of the ip, but for classless addressing the router has to look inside
+the ip packet to look for a mask that allows it to extract the bits pertinent to the current network
+level.
+
+\pagebreak
+
+% List all the steps involved in performing a `ping` between hosts H1 and H3? (Please
+% try to be as detailed as possible.)
+\paragraph*{Question 11}
+Assuming H1's ARP table is empty, it first makes an ARP request for H3's IP; H2 drops the packet
+and R1 changes the MAC address in the request to be its on matches the prefix of H3's IP to that
+of the lower (in the picture) subnetwork with the mask 255.255.255.0 and number 128.96.33.0 and
+broadcasts the modified ARP request to that network which is answered by H3 with its mac address.
+The router than sends that response with H3 eth address to H1. Now, H1 sends a ping request (ICMP)
+to H3's MAC and IP, the router read's H3's ip from the ping request and masks it
+with the subnet mask 255.255.255.0 and which matches with the lower subnetwork. Then it sends the
+packet to that which is received by H3. H3 the sends a response to the packet's source ip which
+is received by the router and masked with 255.255.255.255.128 which matches with the upper subnetwork.
+The router then forwards the packet to H1 in that network.
+
+% List all the steps involved in performing a `ping` between router R1 and host H3?
+% (Please try to be as detailed as possible.) 
+\paragraph*{Question 12}
+First H3 will make an ARP request for the IP 128.96.33.1 which is answered by the router R1 with its
+MAC address and stored on H3's arp table. Then, H3, will make a ping request with H3's IP and ETH
+address. This request will be received by R1 which will apply the mask in the request (255.255.255.0)
+to the provided ip (128.96.33.1) and see that it matches with the 'current' subnetwork. Then it will
+use that mask to get the device (0.0.0.1) and notice that it is itself the device. Then the router
+will answer the ping request using the source ip in the packet (128.96.33.14).
+
+\end{document}
