@@ -78,6 +78,9 @@ def ProcPacketIn(switch_name, mcast_group_id,
                  eth_to_port_map, num_entries_threshold, 
                  vlan_id_to_ports_map,
                  logs_dir, num_logs_threshold):
+    
+    print(vlan_id_to_ports_map) 
+    
     try:
         logs_count = 0
         while True:
@@ -85,9 +88,6 @@ def ProcPacketIn(switch_name, mcast_group_id,
             if rep is not None:
                 # Read the raw packet
                 payload = rep.packet.payload
-
-
-
                 
                 ##################################################################################
                 # Packet parsing logic - Begins ##################################################
@@ -99,17 +99,44 @@ def ProcPacketIn(switch_name, mcast_group_id,
                 # - VLAN header (if present)
                 
                 # NOTE: please follow p4rt-src/bridge.py for a reference example
-
-
-                #### ADD YOUR CODE HERE ... ####
-
+                
+                # Parse metadata
+                ingress_port_in_bytes = rep.packet.metadata[0].value
+                ingress_port = int.from_bytes(ingress_port_in_bytes, byteorder='big')
+                
+                # Parse Ethernet header
+                dst_mac_in_bytes = payload[0:6]
+                dst_mac = mac2str(dst_mac_in_bytes)
+                src_mac_in_bytes = payload[6:12]
+                src_mac = mac2str(src_mac_in_bytes)
+                
+                # Check if the packet is a VLAN packet
+                eth_type_in_bytes = payload[12:14]
+                eth_type = int.from_bytes(eth_type_in_bytes, byteorder='big')
+                
+                # Parse VLAN header if present
+                vlan_tag = None
+                vlan_port = None
+                if eth_type == ETH_TYPE_VLAN:
+                    # Extract VLAN tag
+                    vlan_tag_in_bytes = payload[14:16]
+                    vlan_tag = int.from_bytes(vlan_tag_in_bytes, byteorder='big')
+                    
+                    # Extract VLAN port from vlan_id_to_ports_map
+                    
+                    
+                    
+                    # Update Ethernet type
+                    eth_type_in_bytes = payload[16:18]
+                    eth_type = int.from_bytes(eth_type_in_bytes, byteorder='big')
+                    
+                # Log info about the packet
+                print("INFO: Packet received: ingress_port={0} src_mac={1} dst_mac={2} eth_type={3} vlan_tag={4}"
+                        .format(ingress_port, src_mac, dst_mac, hex(eth_type), vlan_tag))
 
                 ##################################################################################
                 # Packet parsing logic - Ends ####################################################
                 ##################################################################################
-
-
-
 
                 # Decrement table entry's counter
                 del_mac_list = []
@@ -123,9 +150,6 @@ def ProcPacketIn(switch_name, mcast_group_id,
                 for mac in del_mac_list:
                     del eth_to_port_map[mac]
 
-
-
-
                 ##################################################################################
                 # Learning switch logic - Begins #################################################
                 ##################################################################################
@@ -137,22 +161,47 @@ def ProcPacketIn(switch_name, mcast_group_id,
                 #   - broadcast the ARP packet; however, make sure only those hosts belonging to 
                 #     a partuclar VLAN receive the packet (use `vlan_id_to_ports_map` table 
                 #     for this)
+                if eth_type == ETH_TYPE_ARP:
+                    # Add src MAC to port mapping
+                    eth_to_port_map[src_mac] = {'port': ingress_port, 'count': num_entries_threshold}
+                    
+                    # Look for the destination MAC address in the Ethernet address to port mapping
+                    dst_port = eth_to_port_map.get(dst_mac, None)
+                    
+                    # If the we found the packet's destination MAC address in the mapping,
+                    # and in the same VLAN, send the packet out.
+                    # if dst_port and 
+                    
+                
                 # - Else, for any other packet,
                 #   - forward it using the learned Ethernet address to port mapping (i.e., 
                 #     `eth_to_port_map` table)
                 #   - if no mapping exists, drop the packet (we haven't received an ARP request for 
                 #     it yet)
-
-                
-                #### ADD YOUR CODE HERE ... ####
-
-
+                else:
+                    # Look for the destination MAC address in the Ethernet address to port mapping
+                    dst_port = eth_to_port_map.get(dst_mac, None)
+                    
+                    # Drop the packet if no mapping exists
+                    if dst_port is None:
+                        print("INFO: Packet dropped: mac={0}".format(dst_mac))
+                        continue
+                    
+                    # Forward the packet
+                    else:
+                        print("INFO: Packet forwarded: mac={0} port={1}".format(
+                            dst_mac, dst_port['port']))
+                        
+                        # Update the table entry's counter
+                        dst_port['count'] = num_entries_threshold
+                        
+                        # Send the packet out
+                        ProcPacketOut(payload, ingress_port_in_bytes=ingress_port_in_bytes, 
+                                      egress_port_in_bytes=dst_port['port'].to_bytes(4, byteorder='big'))
+                        
                 ##################################################################################
                 # Learning switch logic - Ends ###################################################
                 ##################################################################################
-
-
-
 
             # Logs the Ethernet address to port mapping
             logs_count += 1
@@ -161,8 +210,8 @@ def ProcPacketIn(switch_name, mcast_group_id,
                 with open('{0}/{1}-table.json'.format(logs_dir, switch_name), 'w') as outfile:
                     json.dump(eth_to_port_map, outfile)
 
-                print(
-                    "INFO: Logs committed to {0}/{1}-table.json".format(logs_dir, switch_name))
+                # print(
+                #     "INFO: Logs committed to {0}/{1}-table.json".format(logs_dir, switch_name))
     except KeyboardInterrupt:
         return None
 
