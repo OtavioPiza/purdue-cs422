@@ -116,15 +116,10 @@ def ProcPacketIn(switch_name, mcast_group_id,
                 
                 # Parse VLAN header if present
                 vlan_tag = None
-                vlan_port = None
                 if eth_type == ETH_TYPE_VLAN:
                     # Extract VLAN tag
                     vlan_tag_in_bytes = payload[14:16]
                     vlan_tag = int.from_bytes(vlan_tag_in_bytes, byteorder='big')
-                    
-                    # Extract VLAN port from vlan_id_to_ports_map
-                    
-                    
                     
                     # Update Ethernet type
                     eth_type_in_bytes = payload[16:18]
@@ -166,12 +161,50 @@ def ProcPacketIn(switch_name, mcast_group_id,
                     eth_to_port_map[src_mac] = {'port': ingress_port, 'count': num_entries_threshold}
                     
                     # Look for the destination MAC address in the Ethernet address to port mapping
-                    dst_port = eth_to_port_map.get(dst_mac, None)
+                    dst_entry = eth_to_port_map.get(dst_mac, None)
                     
-                    # If the we found the packet's destination MAC address in the mapping,
-                    # and in the same VLAN, send the packet out.
-                    # if dst_port and 
+                    # Handle VLAN broadcast
+                    if vlan_tag:
+                        # Get the list of ports for the VLAN.
+                        src_vlan_ports = vlan_id_to_ports_map.get(vlan_tag, [])
+                        
+                        # If the destination MAC is not in the mapping, broadcast the packet
+                        # to all the ports in the same VLAN except the ingress port.
+                        if not dst_entry:
+                            for port in src_vlan_ports:
+                                if port != ingress_port:
+                                    ProcPacketOut(payload, mcast_group_id,
+                                                  ingress_port.to_bytes(4, byteorder='big'),
+                                                  port.to_bytes(4, byteorder='big'));
+                                    
+                        # Else if the destination MAC is in the mapping and in the same VLAN,
+                        # send the arp reply to the ingress port with the destination MAC address.
+                        elif dst_entry and dst_entry['port'] in src_vlan_ports:
+                            ProcPacketOut(payload, mcast_group_id,
+                                          ingress_port.to_bytes(4, byteorder='big'),
+                                          dst_entry['port'].to_bytes(4, byteorder='big'));
+                            
+                        # Else, drop the packet.
+                        else:
+                            print("INFO: Packet dropped: mac={0}".format(dst_mac))
+                            continue
                     
+                    # Handle non-VLAN broadcast
+                    else:
+                        # If the destination MAC is not in the mapping, broadcast the packet
+                        # to all the ports except the ingress port.
+                        if not dst_entry:
+                            ProcPacketOut(payload,
+                                          mcast_group_id.to_bytes(4, byteorder='big'),
+                                          ingress_port.to_bytes(4, byteorder='big'));
+                                    
+                        # Else if the destination MAC is in the mapping, send the arp reply
+                        # to the ingress port with the destination MAC address.
+                        else:
+                            ProcPacketOut(payload,
+                                          mcast_group_id.to_bytes(4, byteorder='big'),
+                                          ingress_port.to_bytes(4, byteorder='big'),
+                                          dst_entry['port'].to_bytes(4, byteorder='big'));
                 
                 # - Else, for any other packet,
                 #   - forward it using the learned Ethernet address to port mapping (i.e., 
