@@ -1,22 +1,3 @@
-############################################################################
-##
-##     This file is part of Purdue CS 422.
-##
-##     Purdue CS 422 is free software: you can redistribute it and/or modify
-##     it under the terms of the GNU General Public License as published by
-##     the Free Software Foundation, either version 3 of the License, or
-##     (at your option) any later version.
-##
-##     Purdue CS 422 is distributed in the hope that it will be useful,
-##     but WITHOUT ANY WARRANTY; without even the implied warranty of
-##     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-##     GNU General Public License for more details.
-##
-##     You should have received a copy of the GNU General Public License
-##     along with Purdue CS 422. If not, see <https://www.gnu.org/licenses/>.
-##
-#############################################################################
-
 import json
 import argparse
 import p4runtime_sh.shell as p4sh
@@ -64,6 +45,8 @@ def InstallMcastGrpEntry(mcast_group_id, bridge_ports):
     mcast_entry.insert()
 
 # Delete a multicast group entry
+
+
 def DeleteMcastGrpEntry(mcast_group_id):
     mcast_entry = p4sh.MulticastGroupEntry(mcast_group_id)
     mcast_entry.delete()
@@ -75,12 +58,12 @@ def DeleteMcastGrpEntry(mcast_group_id):
 
 # Process incoming packets
 def ProcPacketIn(switch_name, mcast_group_id,
-                 eth_to_port_map, num_entries_threshold, 
+                 eth_to_port_map, num_entries_threshold,
                  vlan_id_to_ports_map,
                  logs_dir, num_logs_threshold):
-    
-    print(vlan_id_to_ports_map) 
-    
+
+    print(vlan_id_to_ports_map)
+
     try:
         logs_count = 0
         while True:
@@ -88,46 +71,56 @@ def ProcPacketIn(switch_name, mcast_group_id,
             if rep is not None:
                 # Read the raw packet
                 payload = rep.packet.payload
-                
+
                 ##################################################################################
                 # Packet parsing logic - Begins ##################################################
                 ##################################################################################
-                
+
                 # TODO: For each incoming packet, read the following fields:
                 # - ingress port
                 # - Ethernet header (source/destination MAC addresses and type)
                 # - VLAN header (if present)
-                
+
                 # NOTE: please follow p4rt-src/bridge.py for a reference example
-                
+
                 # Parse metadata
                 ingress_port_in_bytes = rep.packet.metadata[0].value
-                ingress_port = int.from_bytes(ingress_port_in_bytes, byteorder='big')
-                
+                ingress_port = int.from_bytes(
+                    ingress_port_in_bytes, byteorder='big')
+
                 # Parse Ethernet header
                 dst_mac_in_bytes = payload[0:6]
                 dst_mac = mac2str(dst_mac_in_bytes)
                 src_mac_in_bytes = payload[6:12]
                 src_mac = mac2str(src_mac_in_bytes)
-                
+
                 # Check if the packet is a VLAN packet
                 eth_type_in_bytes = payload[12:14]
                 eth_type = int.from_bytes(eth_type_in_bytes, byteorder='big')
-                
+
                 # Parse VLAN header if present
                 vlan_tag = None
                 if eth_type == ETH_TYPE_VLAN:
                     # Extract VLAN tag
                     vlan_tag_in_bytes = payload[14:16]
-                    vlan_tag = int.from_bytes(vlan_tag_in_bytes, byteorder='big')
-                    
+                    vlan_tag = int.from_bytes(
+                        vlan_tag_in_bytes, byteorder='big')
+
                     # Update Ethernet type
                     eth_type_in_bytes = payload[16:18]
-                    eth_type = int.from_bytes(eth_type_in_bytes, byteorder='big')
-                    
-                # Log info about the packet
-                print("INFO: Packet received: ingress_port={0} src_mac={1} dst_mac={2} eth_type={3} vlan_tag={4}"
-                        .format(ingress_port, src_mac, dst_mac, hex(eth_type), vlan_tag))
+                    eth_type = int.from_bytes(
+                        eth_type_in_bytes, byteorder='big')
+
+                # TODO remove this line before submission
+                if eth_type == 0x86dd:
+                    continue
+
+                print("INFO: Packet received by {0}".format(switch_name))
+                print("      Ingress port: {0}".format(ingress_port))
+                print("      Source MAC: {0}".format(src_mac))
+                print("      Destination MAC: {0}".format(dst_mac))
+                print("      VLAN tag: {0}".format(vlan_tag if vlan_tag is not None else "None"))
+                print("      Ethernet type: {0}".format(hex(eth_type)))
 
                 ##################################################################################
                 # Packet parsing logic - Ends ####################################################
@@ -150,88 +143,65 @@ def ProcPacketIn(switch_name, mcast_group_id,
                 ##################################################################################
 
                 # TODO: For each packet, carryout the following tasks:
-                # - If the packet is an ARP request, 
-                #   - learn the Ethernet address to port mapping by updating the `eth_to_port_map` 
+                # - If the packet is an ARP request,
+                #   - learn the Ethernet address to port mapping by updating the `eth_to_port_map`
                 #     table with the new source MAC and ingress port pair
-                #   - broadcast the ARP packet; however, make sure only those hosts belonging to 
-                #     a partuclar VLAN receive the packet (use `vlan_id_to_ports_map` table 
+                #   - broadcast the ARP packet; however, make sure only those hosts belonging to
+                #     a partuclar VLAN receive the packet (use `vlan_id_to_ports_map` table
                 #     for this)
                 if eth_type == ETH_TYPE_ARP:
                     # Add src MAC to port mapping
-                    eth_to_port_map[src_mac] = {'port': ingress_port, 'count': num_entries_threshold}
-                    
-                    # Look for the destination MAC address in the Ethernet address to port mapping
-                    dst_entry = eth_to_port_map.get(dst_mac, None)
-                    
+                    eth_to_port_map[src_mac] = {
+                        'port': ingress_port,
+                        'count': num_entries_threshold
+                    }
+
                     # Handle VLAN broadcast
                     if vlan_tag:
-                        # Get the list of ports for the VLAN.
-                        src_vlan_ports = vlan_id_to_ports_map.get(vlan_tag, [])
-                        
-                        # If the destination MAC is not in the mapping, broadcast the packet
-                        # to all the ports in the same VLAN except the ingress port.
-                        if not dst_entry:
-                            for port in src_vlan_ports:
-                                if port != ingress_port:
-                                    ProcPacketOut(payload, mcast_group_id,
-                                                  ingress_port.to_bytes(4, byteorder='big'),
-                                                  port.to_bytes(4, byteorder='big'));
-                                    
-                        # Else if the destination MAC is in the mapping and in the same VLAN,
-                        # send the arp reply to the ingress port with the destination MAC address.
-                        elif dst_entry and dst_entry['port'] in src_vlan_ports:
-                            ProcPacketOut(payload, mcast_group_id,
-                                          ingress_port.to_bytes(4, byteorder='big'),
-                                          dst_entry['port'].to_bytes(4, byteorder='big'));
-                            
-                        # Else, drop the packet.
-                        else:
-                            print("INFO: Packet dropped: mac={0}".format(dst_mac))
-                            continue
-                    
+                        # Get the list of ports for the VLAN and broadcast the packet
+                        # to all the ports except the ingress port.
+                        for port in vlan_id_to_ports_map[vlan_tag]:
+                            if port != ingress_port:
+                                ProcPacketOut(payload,
+                                              mcast_group_id.to_bytes(4, byteorder='big'),
+                                              ingress_port.to_bytes(4, byteorder='big'),
+                                              port.to_bytes(4, byteorder='big'))
+
                     # Handle non-VLAN broadcast
                     else:
-                        # If the destination MAC is not in the mapping, broadcast the packet
-                        # to all the ports except the ingress port.
-                        if not dst_entry:
-                            ProcPacketOut(payload,
-                                          mcast_group_id.to_bytes(4, byteorder='big'),
-                                          ingress_port.to_bytes(4, byteorder='big'));
-                                    
-                        # Else if the destination MAC is in the mapping, send the arp reply
                         # to the ingress port with the destination MAC address.
-                        else:
-                            ProcPacketOut(payload,
-                                          mcast_group_id.to_bytes(4, byteorder='big'),
-                                          ingress_port.to_bytes(4, byteorder='big'),
-                                          dst_entry['port'].to_bytes(4, byteorder='big'));
-                
+                        ProcPacketOut(payload,
+                                      mcast_group_id.to_bytes(4, byteorder='big'),
+                                      ingress_port.to_bytes(4, byteorder='big'))
+
                 # - Else, for any other packet,
-                #   - forward it using the learned Ethernet address to port mapping (i.e., 
+                #   - forward it using the learned Ethernet address to port mapping (i.e.,
                 #     `eth_to_port_map` table)
-                #   - if no mapping exists, drop the packet (we haven't received an ARP request for 
+                #   - if no mapping exists, drop the packet (we haven't received an ARP request for
                 #     it yet)
                 else:
                     # Look for the destination MAC address in the Ethernet address to port mapping
                     dst_port = eth_to_port_map.get(dst_mac, None)
-                    
+
                     # Drop the packet if no mapping exists
                     if dst_port is None:
-                        print("INFO: Packet dropped: mac={0}".format(dst_mac))
                         continue
-                    
-                    # Forward the packet
-                    else:
+
+                    # Forward the packet to the destination port if vlan tag is not present
+                    # or if the destination port is a member of the VLAN
+                    elif vlan_tag is None or dst_port['port'] in vlan_id_to_ports_map[vlan_tag]:
                         print("INFO: Packet forwarded: mac={0} port={1}".format(
                             dst_mac, dst_port['port']))
-                        
+
                         # Update the table entry's counter
                         dst_port['count'] = num_entries_threshold
-                        
+
                         # Send the packet out
-                        ProcPacketOut(payload, ingress_port_in_bytes=ingress_port_in_bytes, 
-                                      egress_port_in_bytes=dst_port['port'].to_bytes(4, byteorder='big'))
-                        
+                        ProcPacketOut(payload,
+                                      mcast_group_id.to_bytes(4, byteorder='big'),
+                                      ingress_port.to_bytes(4, byteorder='big'),
+                                      dst_port['port'].to_bytes(4, byteorder='big'))
+
                 ##################################################################################
                 # Learning switch logic - Ends ###################################################
                 ##################################################################################
@@ -243,12 +213,12 @@ def ProcPacketIn(switch_name, mcast_group_id,
                 with open('{0}/{1}-table.json'.format(logs_dir, switch_name), 'w') as outfile:
                     json.dump(eth_to_port_map, outfile)
 
-                # print(
-                #     "INFO: Logs committed to {0}/{1}-table.json".format(logs_dir, switch_name))
     except KeyboardInterrupt:
         return None
 
 # Process outgoing packets
+
+
 def ProcPacketOut(payload, mcast_grp_in_bytes=b'\00\00', ingress_port_in_bytes=None, egress_port_in_bytes=None):
     req = p4rt.StreamMessageRequest()
     packet = req.packet
@@ -275,7 +245,7 @@ def ProcPacketOut(payload, mcast_grp_in_bytes=b'\00\00', ingress_port_in_bytes=N
 
 
 ###############################################################################
-# Main 
+# Main
 ###############################################################################
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Switch Script')
@@ -306,7 +276,8 @@ if __name__ == '__main__':
     p4sh.setup(
         device_id=BRIDGE_ID, grpc_addr='127.0.0.1:{0}'.format(args.grpc_port), election_id=(0, 1),
         config=p4sh.FwdPipeConfig(
-            '{0}/{1}-p4info.txt'.format(CFG_DIR, switch_name),  # Path to P4Info file
+            # Path to P4Info file
+            '{0}/{1}-p4info.txt'.format(CFG_DIR, switch_name),
             '{0}/{1}.json'.format(CFG_DIR, switch_name)  # Path to config file
         )
     )
@@ -317,29 +288,22 @@ if __name__ == '__main__':
     # Install broadcast rule
     InstallMcastGrpEntry(mcast_group_id, mcast_group_ports)
 
-
-
-
     ##################################################################################
     # Install VLAN Broadcast Rules - Begins ##########################################
     ##################################################################################
 
-    # TODO: Install VLAN-specific broadcast rules (use `vlan_id_to_ports_map` table for 
+    # TODO: Install VLAN-specific broadcast rules (use `vlan_id_to_ports_map` table for
     # this)
 
     #### ADD YOUR CODE HERE ... ####
-
 
     ##################################################################################
     # Install VLAN Broadcast Rules - Ends ############################################
     ##################################################################################
 
-
-
-
     # Start the packet-processing loop
-    ProcPacketIn(switch_name, mcast_group_id, 
-                 eth_to_port_map, NUM_ENTRIES_THRESHOLD, 
+    ProcPacketIn(switch_name, mcast_group_id,
+                 eth_to_port_map, NUM_ENTRIES_THRESHOLD,
                  vlan_id_to_ports_map,
                  LOGS_DIR, NUM_LOGS_THRESHOLD)
 
@@ -348,25 +312,18 @@ if __name__ == '__main__':
     # Delete broadcast rule
     DeleteMcastGrpEntry(mcast_group_id)
 
-
-
-
     ##################################################################################
     # Delete VLAN Broadcast Rules - Begins ###########################################
     ##################################################################################
 
-    # TODO: Delete VLAN-specific broadcast rules (use `vlan_id_to_ports_map` table for 
+    # TODO: Delete VLAN-specific broadcast rules (use `vlan_id_to_ports_map` table for
     # this)
 
     #### ADD YOUR CODE HERE ... ####
 
-
     ##################################################################################
     # Delete VLAN Broadcast Rules - Ends #############################################
     ##################################################################################
-
-
-
 
     # Close the P4Runtime connection
     p4sh.teardown()
