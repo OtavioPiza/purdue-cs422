@@ -42,15 +42,14 @@ def InstallMcastGrpEntry(mcast_group_id, bridge_ports):
     mcast_entry = p4sh.MulticastGroupEntry(mcast_group_id)
     for port in bridge_ports:
         mcast_entry.add(port)
+    print(mcast_entry)
     mcast_entry.insert()
 
+
 # Delete a multicast group entry
-
-
 def DeleteMcastGrpEntry(mcast_group_id):
     mcast_entry = p4sh.MulticastGroupEntry(mcast_group_id)
     mcast_entry.delete()
-
 
 ###############################################################################
 # Packet processing functions
@@ -160,12 +159,15 @@ def ProcPacketIn(switch_name, mcast_group_id,
                     if vlan_tag:
                         # Get the list of ports for the VLAN and broadcast the packet
                         # to all the ports except the ingress port.
-                        for port in vlan_id_to_ports_map[vlan_tag]:
-                            if port != ingress_port:
-                                ProcPacketOut(payload,
-                                              mcast_group_id.to_bytes(4, byteorder='big'),
-                                              ingress_port.to_bytes(4, byteorder='big'),
-                                              port.to_bytes(4, byteorder='big'))
+                        # for port in vlan_id_to_ports_map[vlan_tag]:
+                        #     if port != ingress_port:
+                        #         ProcPacketOut(payload,
+                        #                       mcast_group_id.to_bytes(4, byteorder='big'),
+                        #                       ingress_port.to_bytes(4, byteorder='big'),
+                        #                       port.to_bytes(4, byteorder='big'))
+                        ProcPacketOut(payload,
+                                      vlan_tag.to_bytes(4, byteorder='big'),
+                                      ingress_port.to_bytes(4, byteorder='big'))
 
                     # Handle non-VLAN broadcast
                     else:
@@ -182,7 +184,7 @@ def ProcPacketIn(switch_name, mcast_group_id,
                 else:
                     # Look for the destination MAC address in the Ethernet address to port mapping
                     dst_port = eth_to_port_map.get(dst_mac, None)
-
+                    
                     # Drop the packet if no mapping exists
                     if dst_port is None:
                         continue
@@ -190,8 +192,7 @@ def ProcPacketIn(switch_name, mcast_group_id,
                     # Forward the packet to the destination port if vlan tag is not present
                     # or if the destination port is a member of the VLAN
                     elif vlan_tag is None or dst_port['port'] in vlan_id_to_ports_map[vlan_tag]:
-                        print("INFO: Packet forwarded: mac={0} port={1}".format(
-                            dst_mac, dst_port['port']))
+                        print("INFO: Packet forwarded: mac={0} port={1}".format(dst_mac, dst_port['port']))
 
                         # Update the table entry's counter
                         dst_port['count'] = num_entries_threshold
@@ -201,6 +202,9 @@ def ProcPacketIn(switch_name, mcast_group_id,
                                       mcast_group_id.to_bytes(4, byteorder='big'),
                                       ingress_port.to_bytes(4, byteorder='big'),
                                       dst_port['port'].to_bytes(4, byteorder='big'))
+                        
+                    else:
+                        continue
 
                 ##################################################################################
                 # Learning switch logic - Ends ###################################################
@@ -216,9 +220,8 @@ def ProcPacketIn(switch_name, mcast_group_id,
     except KeyboardInterrupt:
         return None
 
+
 # Process outgoing packets
-
-
 def ProcPacketOut(payload, mcast_grp_in_bytes=b'\00\00', ingress_port_in_bytes=None, egress_port_in_bytes=None):
     req = p4rt.StreamMessageRequest()
     packet = req.packet
@@ -294,9 +297,11 @@ if __name__ == '__main__':
 
     # TODO: Install VLAN-specific broadcast rules (use `vlan_id_to_ports_map` table for
     # this)
-
-    #### ADD YOUR CODE HERE ... ####
-
+    # For each VLAN ID, install a broadcast rule that forwards the packet to all the
+    # ports that are members of the VLAN
+    for vlan_tag, ports in vlan_id_to_ports_map.items():
+        InstallMcastGrpEntry(vlan_tag, ports)
+        
     ##################################################################################
     # Install VLAN Broadcast Rules - Ends ############################################
     ##################################################################################
@@ -318,8 +323,8 @@ if __name__ == '__main__':
 
     # TODO: Delete VLAN-specific broadcast rules (use `vlan_id_to_ports_map` table for
     # this)
-
-    #### ADD YOUR CODE HERE ... ####
+    for vlan_tag in vlan_id_to_ports_map.keys():
+        DeleteMcastGrpEntry(vlan_tag)
 
     ##################################################################################
     # Delete VLAN Broadcast Rules - Ends #############################################
