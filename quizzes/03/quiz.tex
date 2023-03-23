@@ -1,0 +1,112 @@
+\documentclass[12pt]{article}
+\usepackage{graphicx}
+\usepackage{fancyvrb}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{tikz}
+\usepackage[margin=0in]{geometry}
+\newtheorem{definition}{Definition}
+
+\title{CS 422 - Quiz 2}
+\author{Otavio Sartorelli de Toledo Piza}
+\date{Spring 2023}
+
+\begin{document}
+
+\maketitle
+
+\pagebreak
+
+\paragraph*{Quiz Instructions}
+I have read the instructions. PUID: 0032690213.
+
+\pagebreak
+
+\paragraph*{Question 1}
+Cumulative acknowledgement is when the receiving host on a TCP connection waits to acknowledge
+more than one packet at the same time. It helps reduce retransmissions by allowing the host that
+sent the packets to only retransmit those that were not acknowledged.
+
+\paragraph*{Question 2}
+The sliding window provides a flow control mechanism in which the receiving host advertizes a
+window size to the sending host. Then, the sending host will take into account un-acknowledged
+packets (i.e. ones that are still in transit) and only send so much new data to the receiving
+host as to not overwhelm it. This maximizes the amount of data being transmitted without
+the a server overwhelming a client's resources. The sliding window also allows multiple packets
+to be in transit at the same time since they contain enough information to be ordered independent
+of when they arrive.
+
+\paragraph*{Question 3}
+The three way handshake is the initialization sequence that starts a TCP connection. It ensures
+that both the sender and receiver are ready to communicate. In terms of performance, it is the
+contains the shortest number of steps to initialize a connection that guarantees all packets
+will be delivered and will be in order from an application's viewpoint. However, it still adds
+some overhead compared to UDP where such a handshake is not present, but it does not guarantee
+all packets will be delivered.
+
+\subparagraph*{}
+In that sense, it is impossible to build a reliable communication protocol without some form of
+handshake since it establishes necessary parameters that allow for guaranteed packet delivery
+and ensures both hosts are ready to communicate. For example, it would not be possible to
+synchronize both hosts to guarantee they are both receiving all data and interpreting it
+correctly.
+
+\paragraph*{Question 4}
+Flow control is when senders limit how much data they send to not overwhelm the receiver. Congestion
+control is preventing too much data being inserted into a network. In that sense, networks can
+become congested in many ways. For example, if there are too many devices the network can become
+congested. This can also happen if there is a link that is heavily used and becomes a bottleneck
+(e.g. a bridge in terms of a graph).
+
+\pagebreak
+
+\paragraph*{Question 5}
+The data plane is where the actual data transferring takes place i.e. the actual physical components
+of the network. On the other hand, the control plane is responsible for making decision on how the
+data should be forwarded. For example, restricting traffic within a sing VLAN is a control plane's
+job. With that in mind, a SDN the control plane is separated from the data plane by introducing
+centralized controllers and network hardware that only worries about the data plane which are managed
+by the controllers.
+
+\paragraph*{Question 6}
+One application is VLAN which ensures traffic only stays within the same VLAN. For example, a host
+on VLAN 1 cannot communicate with a host on VLAN 2. More generally, we can say that one of the control
+plane's application is to control the access of a group or peer have to the network's resources.
+Another application is for routing protocols which determine the best path for traffic. In that sense, 
+the centralized controller enables routers to get information about the topology and state of the
+network and thus make better decision by using protocols such as OSPF which require a global
+network map.
+
+\pagebreak
+
+\paragraph*{Question 7}
+A forwarding table is used to store information about the next hop for a given destination address.
+For example, a forwarding table would store that for a given address A the next hop is to go to
+B. In that sense, the forwarding table has specific details on how to forward a packet to a given
+address. On the other hand, the routing table sores information about the topology of the network and
+the paths packets have to reach their destination. In that sense, the routing table gets populated
+by BGP and allows the router to make forwarding decisions.
+
+\subparagraph*{}
+With that in mind, it is clear that the router needs both tables because they each have a different
+application. Without the forwarding table, the router would not know how to forward a packet to
+address A and without the routing table, the router would not know how to reach a destination since
+it would not know of any available routes to get to that destination.
+
+\paragraph*{Question 8}
+The key difference is that while distance-vector protocol keeps track about the number of hops (i.e.
+distance) and direction to all other networks by exchanging information with its neighbors the
+link-state protocol involves each router exchanging information about its connections (i.e. who
+it can reach) with all other routers in the entire network and then constructing a
+map of the network used to determine the best path to each destination.
+
+\subparagraph*{}
+Split horizon with poison reverse is a method for distance-vector protocols which prevent infinite
+routing loops. In that sense, in split horizon, a router will not advertize a route back to the
+router that gave it that information. For example, if A tells B about C, B will not tell A about C.
+Moreover, with poison reverse when a router sees a destination is unreachable it immediately tells
+that to the neighbor that originally advertized the route. Using the same example, if B sees that
+C is now unreachable, it immediately tells A about that so it avoids forwarding packets towards
+that unreachable destination.
+
+\end{document}
