@@ -27,13 +27,15 @@ from utils.rest import install_rule, delete_rule, install_group
 
 
 class PacketHandler:
-    
+
     def __init__(self, intf, mac_map, ip_map):
         self.intf = intf
         self.mac_map = mac_map
         self.ip_map = ip_map
-        self.unrequested_dns = defaultdict(lambda: 0)
-        self.dns_requests = defaultdict(lambda: {})
+        self.unrequested_dns = {}
+        self.dns_requests = {}
+        self.blocked_hosts = set()
+        self.delete_queue = []
         # TODO: Create and initialize additional instance variables
         #       for detection and mitigation
         # add code here ...
@@ -50,27 +52,46 @@ class PacketHandler:
         return res
 
     def handle_packet(self, packet):
-        # TODO: process the packet and install flow rules to perform DNS reflection
-        #       attack detection and mitigation
         
-        
+        # Empty the delete queue
+        # while len(self.delete_queue) > 0:
+        #     sip, dip, did = self.delete_queue.pop()
+        #     delete_rule(
+        #         table="forward",
+        #         ipv4_src=sip,
+        #         ipv4_dst=dip,
+        #         dns_id=did
+        #     )
+
         # Check if packet is an IP packet and a DNS packet
         if IP not in packet or DNS not in packet:
             return
-        
-        # Extract the source and destination ip addresses from the packet. 
+
+        # Extract the source and destination ip addresses from the packet.
         src_ip = packet[IP].src
         dst_ip = packet[IP].dst
+        src_port = packet[UDP].sport
+        dest_port = packet[UDP].dport
         dns_id = packet[DNS].id
         
+        print("IP Packet received")
+        print "DNS ID: %s is a %s" % (dns_id, "request" if packet[DNS].qr == 0 else "response")
+        print "Src: %s:%d Dst: %s:%d" % (src_ip, src_port, dst_ip, dest_port)
+        print({dst_ip})
+
         # If the packet is a DNS request add the requester to the dns_requests dictionary
         # or increment the number of requests if the requester is already in the dictionary
         # and install a rule to allow a response from the destination ip to the source ip.
         if packet[DNS].qr == 0:
-            self.dns_requests[src_ip].insert(dns_id)
-            
+            # If there is no entry for the source ip in the dns_requests dictionary, create
+            # a new set and add the DNS ID to the set.
+            if src_ip not in self.dns_requests:
+                self.dns_requests[src_ip] = set()
+
             # Create a flow rule that allows packets from the destination ip to the source ip
             # with the same DNS ID.
+            self.dns_requests[src_ip].add(dns_id)
+            print "Installing rule for %s to %s" % (dst_ip, src_ip)
             install_rule(
                 table="forward",
                 priority=1000,
@@ -78,56 +99,45 @@ class PacketHandler:
                 ipv4_src=dst_ip,
                 ipv4_dst=src_ip,
                 dns_id=dns_id,
-                noop=True
+                output=2
             )
-     
-        # Determine if the packet is a DNS response and if the response is unrequested. 
+
+        # Determine if the packet is a DNS response and if the response is unrequested.
         else:
-            
+
             # If the DNS ID is not in the dns_requests dictionary the response is unrequested.
-            if dns_id not in self.dns_requests[dst_ip]:
+            if dst_ip not in self.dns_requests or dns_id not in self.dns_requests[dst_ip]:
+                # If there is no entry for the (src_ip, dst_ip) pair in the unrequested_dns
+                # dictionary, create a new entry with a value of 1.
+                if (src_ip, dst_ip) not in self.unrequested_dns:
+                    self.unrequested_dns[(src_ip, dst_ip)] = 0
+
                 # Add the (src_ip, dst_ip) pair to the unrequested_dns dictionary or increment
                 # the number of unrequested DNS responses if the pair is already in the dictionary.
                 self.unrequested_dns[(src_ip, dst_ip)] += 1
-                
+
                 # If the number of unrequested DNS responses is greater than 5, create a flow
-                # rule to drop packets from the source ip to the destination ip.
-                if self.unrequested_dns[(src_ip, dst_ip)] > 5:
+                # rule to drop packets from the source ip to the destination ip in the future.
+                if self.unrequested_dns[(src_ip, dst_ip)] > 5 and (src_ip, dst_ip) not in self.blocked_hosts:
+                    print "Dropping packets from %s to %s" % (src_ip, dst_ip)
                     install_rule(
                         table="forward",
                         priority=100,
                         is_permanent=True,
+                        l4_src=53,
                         ipv4_src=src_ip,
                         ipv4_dst=dst_ip
                     )
-            
+                    self.blocked_hosts.add((src_ip, dst_ip));
+
             else:
                 # Remove the DNS ID from the dns_requests dictionary and delete the flow rule
                 # that allows packets from the destination ip to the source ip with the same
                 # DNS ID.
                 self.dns_requests[dst_ip].remove(dns_id)
-                delete_rule(
-                    table="forward",
-                    ipv4_src=src_ip,
-                    ipv4_dst=dst_ip,
-                    dns_id=dns_id
-                )
-            
-                
-        
-        print("IP Packet received")
-        print("Request ?")
-        print(packet[DNS].qr == 0)
-        
-        print("DNS ID:")
-        print(dns_id)
-        
-        print("Src:")
-        print({src_ip})
-        
-        print("Dst:")
-        print({dst_ip})
-        pass
+                self.delete_queue.append((src_ip, dst_ip, dns_id))
+                print "Deleting rule for %s to %s" % (dst_ip, src_ip)
+
 
     def _sniff(self, intf):
         sniff(iface=intf, prn=lambda x: self.handle_packet(x),
@@ -142,10 +152,15 @@ if __name__ == "__main__":
         priority=100,
         is_permanent=True,
         monitor=True,
-        l4_src=53,
         l4_dst=53,
     )
-    
+    install_rule(
+        table="monitor",
+        priority=100,
+        is_permanent=True,
+        monitor=True,
+        l4_src=53,
+    )
     intf = "m1-eth1"
     mac_map = {intf: ["00:00:00:00:00:02", "00:00:00:00:00:03"]}
     ip_map = {intf: ["10.0.0.2", "10.0.0.3"]}
