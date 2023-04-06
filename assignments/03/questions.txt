@@ -22,8 +22,13 @@ Question 2) What components of the detection/mitigation technique used in this a
             may not be optimal for real-world deployment? Choose one and explain how it
             could be improved.
 
-Answer 2) A few components that might not be optimal for real world deployment are having to install
-          a rule for every DNS request, having a monitor sniff all DNS packets to look for  
+Answer 2) A some components that might not be optimal for real world deployment are having to install
+          a rule for every DNS request, having a monitor sniff all DNS packets to look for reflection
+          attacks, restricting a DNS server permanently. I believe blocking that creating a rule
+          to block the server from sending DNS packets to a host permanently is problematic because,
+          if the attack stops, we are still going to have to deal with the overhead of installing
+          a new rule for every DNS request coming from the attacked host which is bound to consume
+          processing resources on the switch and network.
 
 ##########################################
 

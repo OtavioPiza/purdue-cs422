@@ -70,18 +70,19 @@ class PacketHandler:
 
             # Create a flow rule that allows packets from the destination ip to the source ip
             # with the same DNS ID.
-            self.dns_requests[src_ip].add(dns_id)
-            install_rule(
-                table="forward",
-                priority=1000,
-                timeout=1000,
-                ipv4_src=dst_ip,
-                ipv4_dst=src_ip,
-                l4_src=dest_port,
-                l4_dst=src_port,
-                dns_id=dns_id,
-                output=2
-            )
+            if (dst_ip, src_ip) in self.blocked_hosts:
+                self.dns_requests[src_ip].add(dns_id)
+                install_rule(
+                    table="forward",
+                    priority=1000,
+                    timeout=1000,
+                    ipv4_src=dst_ip,
+                    ipv4_dst=src_ip,
+                    l4_src=dest_port,
+                    l4_dst=src_port,
+                    dns_id=dns_id,
+                    output=2
+                )
 
         # Determine if the packet is a DNS response and if the response is unrequested.
         else:
@@ -110,7 +111,7 @@ class PacketHandler:
                     )
                     self.blocked_hosts.add((src_ip, dst_ip))
 
-            else:
+            elif dst_ip in self.dns_requests and dns_id in self.dns_requests[dst_ip]:
                 # Remove the DNS ID from the dns_requests dictionary and delete the flow rule
                 # that allows packets from the destination ip to the source ip with the same
                 # DNS ID.
