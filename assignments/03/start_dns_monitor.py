@@ -109,7 +109,7 @@ class PacketHandler:
 
                 # If the number of unrequested DNS responses is greater than 5, create a flow
                 # rule to drop packets from the source ip to the destination ip in the future.
-                if self.unrequested_dns[(src_ip, dst_ip)] > 5 and (src_ip, dst_ip) not in self.blocked_hosts:
+                if self.unrequested_dns[(src_ip, dst_ip)] > 10 and (src_ip, dst_ip) not in self.blocked_hosts:
                     print "Dropping packets from %s to %s" % (src_ip, dst_ip)
                     install_rule(
                         table="forward",

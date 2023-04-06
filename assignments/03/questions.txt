@@ -1,8 +1,8 @@
 ###########################################
 
 CS 422 (Purdue): Assignment 3
-Names:
-PUIDs:
+Names: Otavio Sartorelli de Toledo Piza
+PUIDs: 0032690213
 
 ###########################################
 
