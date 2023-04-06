@@ -10,7 +10,11 @@ Question 1) Approximately how long into the simulation (seconds) is the DNS
             reflection attack detected? How can you tell this from the DNS
             response rate plot?
 
-Answer 1) TODO
+Answer 1) Approximately after 25 seconds after starting the monitor. We can estimate this by
+          looking for the point in the graph in which the number of DNS replies received by H2
+          starts to decrease until it goes back to normal levels (compared to H3). This reduction
+          in the rate of DNS responses received by H2 indicates that monitor has installed
+          the rule to drop DNS replies from H1 that do not have a corresponding request.
 
 ##########################################
 
@@ -18,7 +22,8 @@ Question 2) What components of the detection/mitigation technique used in this a
             may not be optimal for real-world deployment? Choose one and explain how it
             could be improved.
 
-Answer 2) TODO
+Answer 2) A few components that might not be optimal for real world deployment are having to install
+          a rule for every DNS request, having a monitor sniff all DNS packets to look for  
 
 ##########################################
 
