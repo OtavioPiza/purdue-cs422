@@ -2,20 +2,20 @@
 
 ############################################################################
 ##
-# This file is part of Purdue CS 422.
+##     This file is part of Purdue CS 422.
 ##
-# Purdue CS 422 is free software: you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
-# (at your option) any later version.
+##     Purdue CS 422 is free software: you can redistribute it and/or modify
+##     it under the terms of the GNU General Public License as published by
+##     the Free Software Foundation, either version 3 of the License, or
+##     (at your option) any later version.
 ##
-# Purdue CS 422 is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
+##     Purdue CS 422 is distributed in the hope that it will be useful,
+##     but WITHOUT ANY WARRANTY; without even the implied warranty of
+##     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+##     GNU General Public License for more details.
 ##
-# You should have received a copy of the GNU General Public License
-# along with Purdue CS 422. If not, see <https://www.gnu.org/licenses/>.
+##     You should have received a copy of the GNU General Public License
+##     along with Purdue CS 422. If not, see <https://www.gnu.org/licenses/>.
 ##
 #############################################################################
 
@@ -32,14 +32,8 @@ class PacketHandler:
         self.intf = intf
         self.mac_map = mac_map
         self.ip_map = ip_map
-
-        # Dictionary that maps a (src_ip, dst_ip) pair to the number of unrequested DNS responses.
         self.unrequested_dns = {}
-
-        # Dictionary that maps a source ip to a set of DNS IDs.
         self.dns_requests = {}
-
-        # Set of (src_ip, dst_ip) pairs that have been blocked due to unrequested DNS responses.
         self.blocked_hosts = set()
 
     def start(self):
@@ -54,7 +48,6 @@ class PacketHandler:
         return res
 
     def handle_packet(self, packet):
-
         # Check if packet is an IP packet and a DNS packet
         if IP not in packet or DNS not in packet:
             return
@@ -65,11 +58,7 @@ class PacketHandler:
         src_port = packet[UDP].sport
         dest_port = packet[UDP].dport
         dns_id = packet[DNS].id
-
-        print "IP Packet received"
-        print "DNS ID: %s is a %s" % (dns_id, "request" if packet[DNS].qr == 0 else "response")
-        print "Src: %s:%d Dst: %s:%d" % (src_ip, src_port, dst_ip, dest_port)
-
+        
         # If the packet is a DNS request add the requester to the dns_requests dictionary
         # or increment the number of requests if the requester is already in the dictionary
         # and install a rule to allow a response from the destination ip to the source ip.
@@ -82,13 +71,14 @@ class PacketHandler:
             # Create a flow rule that allows packets from the destination ip to the source ip
             # with the same DNS ID.
             self.dns_requests[src_ip].add(dns_id)
-            print "Installing rule for %s to %s" % (dst_ip, src_ip)
             install_rule(
                 table="forward",
                 priority=1000,
-                is_permanent=True,
+                timeout=1000,
                 ipv4_src=dst_ip,
                 ipv4_dst=src_ip,
+                l4_src=dest_port,
+                l4_dst=src_port,
                 dns_id=dns_id,
                 output=2
             )
@@ -109,13 +99,12 @@ class PacketHandler:
 
                 # If the number of unrequested DNS responses is greater than 5, create a flow
                 # rule to drop packets from the source ip to the destination ip in the future.
-                if self.unrequested_dns[(src_ip, dst_ip)] > 10 and (src_ip, dst_ip) not in self.blocked_hosts:
-                    print "Dropping packets from %s to %s" % (src_ip, dst_ip)
+                if self.unrequested_dns[(src_ip, dst_ip)] > 50 and (src_ip, dst_ip) not in self.blocked_hosts:
                     install_rule(
                         table="forward",
                         priority=100,
                         is_permanent=True,
-                        l4_src=53,
+                        l4_src=src_port,
                         ipv4_src=src_ip,
                         ipv4_dst=dst_ip
                     )
@@ -126,7 +115,7 @@ class PacketHandler:
                 # that allows packets from the destination ip to the source ip with the same
                 # DNS ID.
                 self.dns_requests[dst_ip].remove(dns_id)
-                print "Deleting rule for %s to %s" % (dst_ip, src_ip)
+
 
     def _sniff(self, intf):
         sniff(iface=intf, prn=lambda x: self.handle_packet(x),
@@ -134,7 +123,6 @@ class PacketHandler:
 
 
 if __name__ == "__main__":
-    # Install rule to clone packets to the DNS server to the monitor table.
     install_rule(
         table="monitor",
         priority=100,
@@ -142,8 +130,6 @@ if __name__ == "__main__":
         monitor=True,
         l4_dst=53,
     )
-
-    # Install rule to clone packets from the DNS server to the monitor table.
     install_rule(
         table="monitor",
         priority=100,
@@ -151,9 +137,9 @@ if __name__ == "__main__":
         monitor=True,
         l4_src=53,
     )
-
     intf = "m1-eth1"
     mac_map = {intf: ["00:00:00:00:00:02", "00:00:00:00:00:03"]}
     ip_map = {intf: ["10.0.0.2", "10.0.0.3"]}
     handler = PacketHandler(intf, mac_map, ip_map)
     handler.start()
+
