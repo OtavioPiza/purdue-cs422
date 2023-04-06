@@ -32,13 +32,13 @@ class PacketHandler:
         self.intf = intf
         self.mac_map = mac_map
         self.ip_map = ip_map
-       
+
         # Dictionary that maps a (src_ip, dst_ip) pair to the number of unrequested DNS responses.
         self.unrequested_dns = {}
-        
+
         # Dictionary that maps a source ip to a set of DNS IDs.
         self.dns_requests = {}
-        
+
         # Set of (src_ip, dst_ip) pairs that have been blocked due to unrequested DNS responses.
         self.blocked_hosts = set()
 
@@ -142,7 +142,7 @@ if __name__ == "__main__":
         monitor=True,
         l4_dst=53,
     )
-    
+
     # Install rule to clone packets from the DNS server to the monitor table.
     install_rule(
         table="monitor",
@@ -151,7 +151,7 @@ if __name__ == "__main__":
         monitor=True,
         l4_src=53,
     )
-    
+
     intf = "m1-eth1"
     mac_map = {intf: ["00:00:00:00:00:02", "00:00:00:00:00:03"]}
     ip_map = {intf: ["10.0.0.2", "10.0.0.3"]}
