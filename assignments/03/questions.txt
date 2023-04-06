@@ -1,0 +1,43 @@
+###########################################
+
+CS 422 (Purdue): Assignment 3
+Names:
+PUIDs:
+
+###########################################
+
+Question 1) Approximately how long into the simulation (seconds) is the DNS
+            reflection attack detected? How can you tell this from the DNS
+            response rate plot?
+
+Answer 1) TODO
+
+##########################################
+
+Question 2) What components of the detection/mitigation technique used in this assignment
+            may not be optimal for real-world deployment? Choose one and explain how it
+            could be improved.
+
+Answer 2) TODO
+
+##########################################
+
+Question 3) DNS reflection attacks are of real concern in the global Internet,
+            but a general solution that does not involve updating all connected
+            hosts at once has yet to be found.
+
+	        Think about the reasons why DNS reflection attacks are possible (e.g.,
+	        what does the attacker do, what does the DNS resolver do, what causes
+	        the victim to be negatively affected).
+
+            Pick one of these reasons and brainstorm methods to prevent it, thereby
+            preventing DNS reflection attacks (even if these methods require a
+            complete Internet upgrade).
+
+            Describe the reason you chose and a possible prevention method you came
+            up with.
+
+            This question is intentionally open-ended and will be graded leniently.
+            Try to be concise yet thorough.
+
+Answer 3) TODO
