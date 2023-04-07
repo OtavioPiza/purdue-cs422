@@ -10,7 +10,7 @@ Question 1) Approximately how long into the simulation (seconds) is the DNS
             reflection attack detected? How can you tell this from the DNS
             response rate plot?
 
-Answer 1) Approximately after 25 seconds after starting the monitor. We can estimate this by
+Answer 1) Approximately after 25 seconds after starting the monitor or 30 in total. We can estimate this by
           looking for the point in the graph in which the number of DNS replies received by H2
           starts to decrease until it goes back to normal levels (compared to H3). This reduction
           in the rate of DNS responses received by H2 indicates that monitor has installed
