@@ -50,4 +50,28 @@ Question 3) DNS reflection attacks are of real concern in the global Internet,
             This question is intentionally open-ended and will be graded leniently.
             Try to be concise yet thorough.
 
-Answer 3) TODO
+Answer 3) One of the major reasons why DNS are possible is that DNS servers are created to respond
+          to any request they receive. In that sense, if an attacker has access to to a botnet
+          and can send many fake requests, then current DNS server will send the response to the
+          target host. One possible solution for DNS servers to throttle the maximum number of
+          responses sent to a host. However, the problem with that solution is that it can be
+          very hard do distinguish between legitimate and illegitimate traffic since some hosts
+          might be actually just make multiple requests to a DNS server such as a datacenter.
+          
+          Another possible approach would be to have routers add information to
+          the DNS request (similar to how onion routing works) so that when the request arrives
+          at the DNS server it has a unique signature. Then, when replying to a request, the
+          request would have to take the same path and every router would remove its
+          secret. In that sense, if at any point, a router received a request with an invalid
+          signature (i.e. one it hasn't seen before and doesn't match with its devices key)
+          it would just drop the packet. To achieve this, we would have to reimplement DNS
+          so that it supports this operation which is a major downside. However, one advantage
+          of this approach is that it would distribute the work of detecting DNS reflection attacks
+          and preventing them to the entire network.
+
+          To ensure that hackers are not able to recreate that, each networking device would have
+          to contain some secret key which can be used to generate pseudo-random numbers. Moreover,
+          the information would have to be added in a way such that it's very expensive to find
+          the secretes it is made of but cheap enough computationally for routers to be easily
+          able to add their secret to them (kind of like RSA). Finally, we would also have to
+          ensure packets take the same path which is not guaranteed by IP's best effort model.
