@@ -109,10 +109,7 @@ def ProcPacketIn(switch_name, logs_dir, num_logs_threshold):
                 try:
                     with contextlib.redirect_stdout(None):  # A hack to suppress print statements 
                         # within the table_entry.match get/set objects
-
-
-
-
+                        
                         ##################################################################################
                         # Learning Switch Logic - Begins #################################################
                         ##################################################################################
@@ -126,17 +123,15 @@ def ProcPacketIn(switch_name, logs_dir, num_logs_threshold):
                         #
                         # NOTE: please follow p4rt-src/bridge.py for a reference example on how to install
                         # table entries.
-                        
-                        pass
-                        
+                        table_entry = p4sh.TableEntry('MyIngress.switch_table')(action='forward')
+                        table_entry.match['hdr.ethernet.dstAddr'] = src_mac
+                        table_entry.action['port'] = str(ingress_port)
+                        table_entry.insert()
 
                         ##################################################################################
                         # Learning Switch Logic - Ends ###################################################
                         ##################################################################################
-
-
-
-
+                        
                 except:
                     pass
 
@@ -212,7 +207,6 @@ if __name__ == '__main__':
         # NOTE: please follow p4rt-src/bridge.py for a reference example on how to install
         # table entries.
 
-        #### ADD YOUR CODE HERE ... ####
         for vlan_id in vlan_id_to_ports_map:
             for port in vlan_id_to_ports_map[vlan_id]:
                 
@@ -255,9 +249,14 @@ if __name__ == '__main__':
         # NOTE: please follow p4rt-src/bridge.py for a reference example on how to install
         # table entries.
 
-        #### ADD YOUR CODE HERE ... ####
-
-        pass
+        for vlan_id in vlan_id_to_ports_map:
+            for port in vlan_id_to_ports_map[vlan_id]:
+                
+                # Create rules to allow VID to traverse ports in the same VLAN.
+                table_entry = p4sh.TableEntry('MyEgress.vlan_table')(action='noop')
+                table_entry.match["standard_metadata.egress_port"] = str(port)
+                table_entry.match["meta.vid"] = str(vlan_id)
+                table_entry.delete()
 
         ##################################################################################
         # Delete VLAN Rules - Ends #######################################################
