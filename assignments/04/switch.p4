@@ -169,8 +169,8 @@ control MyIngress(inout headers hdr,
 
         if (meta.etherType == ETH_TYPE_ARP)
             flood();
-        else
-            switch_table.apply();
+
+        switch_table.apply();
 
         /**********************************************************************/
         /* Ingress Apply Logic - Ends *****************************************/
@@ -248,7 +248,13 @@ control MyEgress(inout headers hdr,
         if (standard_metadata.egress_port == CPU_PORT)
             to_controller();
 
-        vlan_table.apply();
+        // If we don't have vlan, then we don't need to check the vlan table
+        if (meta.vid == 0)
+            noop();
+
+        // If we have vlan, then prune packets with table
+        if (meta.vid != 0)
+            vlan_table.apply();
 
 
         /**********************************************************************/

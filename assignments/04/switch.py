@@ -213,18 +213,9 @@ if __name__ == '__main__':
         # table entries.
 
         #### ADD YOUR CODE HERE ... ####
-        ports_added = set()
         for vlan_id in vlan_id_to_ports_map:
             for port in vlan_id_to_ports_map[vlan_id]:
                 
-                if (port not in ports_added):
-                    # Create rules to allow VID 0 to traverse all ports.
-                    table_entry = p4sh.TableEntry('MyEgress.vlan_table')(action='noop')
-                    table_entry.match["standard_metadata.egress_port"] = str(port)
-                    table_entry.match["meta.vid"] = '0'
-                    table_entry.insert()
-                    ports_added.add(port)
-           
                 # Create rules to allow VID to traverse ports in the same VLAN.
                 table_entry = p4sh.TableEntry('MyEgress.vlan_table')(action='noop')
                 table_entry.match["standard_metadata.egress_port"] = str(port)
